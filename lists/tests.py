@@ -20,13 +20,39 @@ class HomePageTest(TestCase):
     def test_home_page_can_save_a_POST_request(self):
 	request = HttpRequest()
 	request.method = 'POST'
-	request.POST['item_text'] = 'A new list item'
+	first_item_text = 'A new list item'
+	request.POST['item_text'] = first_item_text 
 
 	response = home_page(request)
-	expected_html = render_to_string('home.html',
-		{'new_item_text': request.POST['item_text']}
-	)
-	self.assertIn(expected_html, response.content.decode())
+
+	self.assertEqual(Item.objects.count(), 1)
+	first_saved_item = Item.objects.first()
+	self.assertEqual(first_saved_item.text, first_item_text)
+
+
+    def test_home_page_redirects_after_POST(self):
+	request = HttpRequest()
+	request.method = 'POST'
+	request.POST['item_text'] = "A new list element"
+	response = home_page(request)
+
+	self.assertEqual(response.status_code, 302)
+	self.assertEqual(response['location'], '/')
+
+    def test_home_page_saves_only_when_necessary(self):
+	request = HttpRequest()
+	response = home_page(request)
+	self.assertEqual(Item.objects.count(), 0)
+
+    def test_home_page_displays_all_items(self):
+	first_item = Item.objects.create(text = "Item1")
+	second_item = Item.objects.create(text = "Item2")
+
+	request = HttpRequest()
+	response = home_page(request)
+
+	self.assertIn('Item1', response.content.decode())
+	self.assertIn('Item2', response.content.decode())
 
 class ItemModelTest(TestCase):
 
