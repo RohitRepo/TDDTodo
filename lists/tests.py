@@ -36,23 +36,62 @@ class NewListTest(TestCase):
 		data={'item_text': first_item_text}
 	)
 
-	self.assertRedirects(response, '/lists/the-only-list/')
+	new_list = List.objects.first()
+	self.assertRedirects(response, '/lists/%d/' %(new_list.id,))
 
 class ListViewTest(TestCase):
 
-    def test_view_page_displays_all_items(self):
-	first_list = List.objects.create()
-	first_item = Item.objects.create(text = "Item1", list=first_list)
-	second_item = Item.objects.create(text = "Item2", list=first_list)
+    def test_view_page_displays_all_items_of_one_list(self):
+	correct_list = List.objects.create()
+	correct_first_item = Item.objects.create(text = "Item1", list=correct_list)
+	correct_second_item = Item.objects.create(text = "Item2", list=correct_list)
 
-	response = self.client.get('/lists/the-only-list/')
+	wrong_list = List.objects.create()
+	wrong_first_item = Item.objects.create(text="wrong item1", list = wrong_list)
+	wrong_first_item = Item.objects.create(text="wrong item2", list = wrong_list)
+
+	response = self.client.get('/lists/%d/' %(correct_list.id,))
 
 	self.assertContains(response, 'Item1')
 	self.assertContains(response, 'Item2')
+	self.assertNotContains(response, 'wrong item1')
+	self.assertNotContains(response, 'wrong item2')
 
     def test_uses_list_template(self):
-	response = self.client.get('/lists/the-only-list/')
+	item_list = List.objects.create()
+	response = self.client.get('/lists/%d/' %(item_list.id))
 	self.assertTemplateUsed(response, 'list.html')
+
+    def test_passes_correct_list_to_template(self):
+	wrong_list = List.objects.create()
+	correct_list = List.objects.create()
+
+	response = self.client.get('/lists/%d/' %(correct_list.id,))
+	self.assertEqual(response.context['list'], correct_list)
+
+class AddItemTest(TestCase):
+
+    def test_add_new_item_on_POST(self):
+	item_list = List.objects.create()
+	dummy_item_list = List.objects.create()
+	response = self.client.post('/lists/%d/add-item' %(item_list.id, ),
+		data = {'item_text': 'item to existing list'}
+	)
+
+	self.assertEqual(Item.objects.count(), 1)
+	new_item = Item.objects.first()
+	self.assertEqual(new_item.text, "item to existing list")
+	self.assertEqual(new_item.list, item_list)
+	self.assertEqual(dummy_item_list.item_set.count(), 0)
+
+    def test_redirect_after_POST(self):
+	item_list = List.objects.create()
+	response = self.client.post('/lists/%d/add-item' %(item_list.id, ),
+		data = {'item_text': 'item to existing list'}
+	)
+
+	self.assertRedirects(response, '/lists/%d/' %(item_list.id,))
+
 
 class ItemAndListModelTest(TestCase):
 
