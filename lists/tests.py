@@ -17,32 +17,31 @@ class HomePageTest(TestCase):
 	expected_html = render_to_string('home.html')
 	self.assertEqual(response.content.decode(), expected_html)
 
-    def test_home_page_can_save_a_POST_request(self):
+    def test_home_page_saves_only_when_necessary(self):
 	request = HttpRequest()
-	request.method = 'POST'
-	first_item_text = 'A new list item'
-	request.POST['item_text'] = first_item_text 
-
 	response = home_page(request)
+	self.assertEqual(Item.objects.count(), 0)
+
+
+class NewListTest(TestCase):
+
+    def test_saving_a_POST_request(self):
+	first_item_text = 'A new list'
+	response = self.client.post('/lists/new',
+		data={'item_text': first_item_text}
+	)
 
 	self.assertEqual(Item.objects.count(), 1)
 	first_saved_item = Item.objects.first()
 	self.assertEqual(first_saved_item.text, first_item_text)
 
+    def test_redirect_after_POST(self):
+	first_item_text = 'A new list'
+	response = self.client.post('/lists/new',
+		data={'item_text': first_item_text}
+	)
 
-    def test_home_page_redirects_after_POST(self):
-	request = HttpRequest()
-	request.method = 'POST'
-	request.POST['item_text'] = "A new list element"
-	response = home_page(request)
-
-	self.assertEqual(response.status_code, 302)
-	self.assertEqual(response['location'], '/lists/the-only-list')
-
-    def test_home_page_saves_only_when_necessary(self):
-	request = HttpRequest()
-	response = home_page(request)
-	self.assertEqual(Item.objects.count(), 0)
+	self.assertRedirects(response, '/lists/the-only-list/')
 
 class ListViewTest(TestCase):
 
