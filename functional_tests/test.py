@@ -1,8 +1,9 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from django.test import LiveServerTestCase
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
-class NewVisitorTest(LiveServerTestCase):
+class NewVisitorTest(StaticLiveServerTestCase):
 
     def setUp(self):
 	self.browser = webdriver.Firefox()
@@ -85,3 +86,23 @@ class NewVisitorTest(LiveServerTestCase):
 	self.assertNotIn(second_list_item, page_text)
 
 	# Satisfied he goes to sleep for the day.
+
+    def test_layout_and_styling(self):
+	# Tesla goes to home page.
+	self.browser.get(self.live_server_url)
+	self.browser.set_window_size(1024, 768)
+
+	# He notices input box nicely centered.
+	input_box = self.browser.find_element_by_id('id_new_item')
+	self.assertAlmostEqual(input_box.location['x']+input_box.size['width'] / 2,
+		512,
+		delta=5
+	)
+
+	input_box.send_keys(Keys.ENTER)
+	input_box = self.browser.find_element_by_id('id_new_item')
+	self.assertAlmostEqual(input_box.location['x']+input_box.size['width'] / 2,
+		512,
+		delta=5
+	)
+
