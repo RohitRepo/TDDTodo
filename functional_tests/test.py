@@ -1,9 +1,26 @@
+import sys
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from django.test import LiveServerTestCase
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 class NewVisitorTest(StaticLiveServerTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+	for arg in sys.argv:
+	    if 'liveserver' in arg:
+		cls.server_url = 'http://' + arg.split('=')[1]
+		return
+
+	StaticLiveServerTestCase.setUpClass()
+	cls.server_url = cls.live_server_url
+
+    @classmethod
+    def tearDownClass(cls):
+	if cls.server_url == cls.live_server_url:
+	   StaticLiveServerTestCase.tearDownClass()
+
 
     def setUp(self):
 	self.browser = webdriver.Firefox()
